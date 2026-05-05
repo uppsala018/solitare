@@ -1,27 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --purple-deep: #1a0533;
+  --purple-mid: #2d1b69;
+  --purple-light: #4c2d8f;
+  --gold: #f5c842;
+  --gold-dark: #c49a1a;
+  --teal: #00d4aa;
+  --green-neon: #39ff14;
+  --red-bright: #ff3d3d;
+  --white: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--purple-deep);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Fredoka One', cursive;
+}
+
+/* Safe area insets for iPhone notch / Dynamic Island */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left: env(safe-area-inset-left); }
+.safe-right  { padding-right: env(safe-area-inset-right); }
+
+/* Cards — touch optimised */
+.card {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* No text selection on game elements */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .text-balance { text-wrap: balance; }
+
+  .gradient-purple {
+    background: linear-gradient(135deg, var(--purple-deep) 0%, var(--purple-mid) 50%, var(--purple-light) 100%);
+  }
+
+  .gradient-gold {
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
+  }
+
+  .text-gold { color: var(--gold); }
+  .text-teal { color: var(--teal); }
+  .text-neon  { color: var(--green-neon); }
+
+  .glow-gold {
+    text-shadow: 0 0 12px var(--gold), 0 0 24px var(--gold-dark);
+  }
+
+  .glow-teal {
+    box-shadow: 0 0 12px var(--teal), 0 0 24px rgba(0,212,170,0.4);
   }
 }
