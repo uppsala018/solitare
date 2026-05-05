@@ -2,70 +2,104 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import Button from '@/components/ui/Button';
-import { useGameStore } from '@/store/gameStore';
-
-const DAILY_REWARDS = [
-  { day: 1, reward: '100 Coins',  emoji: '🪙', claimed: true  },
-  { day: 2, reward: '250 Coins',  emoji: '🪙', claimed: true  },
-  { day: 3, reward: '1 Pack',     emoji: '🃏', claimed: false },
-  { day: 4, reward: '500 Coins',  emoji: '🪙', claimed: false },
-  { day: 5, reward: '2 Packs',    emoji: '🃏', claimed: false },
-  { day: 6, reward: '1000 Coins', emoji: '💰', claimed: false },
-  { day: 7, reward: 'Crown Pack', emoji: '👑', claimed: false },
-];
+import { ArrowLeft, Tag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import DailyBonusCard   from '@/components/gifts/DailyBonusCard';
+import InviteFriendsCard from '@/components/gifts/InviteFriendsCard';
+import RoyalsCard        from '@/components/gifts/RoyalsCard';
+import SocialFollowCard  from '@/components/gifts/SocialFollowCard';
+import PromoCodeModal    from '@/components/gifts/PromoCodeModal';
 
 export default function GiftsPage() {
-  const { addCoins } = useGameStore();
-  const [claimed, setClaimed] = useState<number[]>([1, 2]);
-
-  function claim(day: number) {
-    if (claimed.includes(day)) return;
-    setClaimed([...claimed, day]);
-    addCoins(100 * day);
-  }
+  const router = useRouter();
+  const [showPromo, setShowPromo] = useState(false);
 
   return (
-    <div className="min-h-screen gradient-purple px-4 py-8 safe-top safe-bottom">
-      <motion.h1
-        className="text-4xl text-gold text-center mb-8"
-        style={{ fontFamily: "'Fredoka One', cursive" }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+    <div className="min-h-screen gradient-purple flex flex-col safe-top safe-bottom">
+      {/* ── Red ribbon header ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #8b0000 0%, #c0392b 40%, #8b0000 100%)' }}
       >
-        Daily Gifts
-      </motion.h1>
+        {/* Ribbon diagonal stripes */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(-45deg, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 1px, transparent 0, transparent 10px)',
+          }}
+        />
 
-      <div className="max-w-lg mx-auto grid grid-cols-3 gap-3 sm:grid-cols-4">
-        {DAILY_REWARDS.map((item, i) => {
-          const isClaimed = claimed.includes(item.day);
-          const isToday = item.day === Math.min(...DAILY_REWARDS.filter(r => !claimed.includes(r.day)).map(r => r.day));
-          return (
-            <motion.div
-              key={item.day}
-              className="flex flex-col items-center gap-2 rounded-2xl p-3"
-              style={{
-                background: isClaimed ? 'rgba(0,212,170,0.1)' : isToday ? 'rgba(245,200,66,0.15)' : 'rgba(255,255,255,0.06)',
-                border: `1px solid ${isClaimed ? 'rgba(0,212,170,0.4)' : isToday ? 'rgba(245,200,66,0.5)' : 'rgba(255,255,255,0.1)'}`,
-              }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.07 }}
-            >
-              <span className="text-xs text-white/50">Day {item.day}</span>
-              <span className="text-3xl">{item.emoji}</span>
-              <span className="text-xs text-white/70 text-center leading-tight">{item.reward}</span>
-              {isClaimed ? (
-                <span className="text-teal text-xs">✓ Claimed</span>
-              ) : (
-                <Button size="sm" variant={isToday ? 'gold' : 'ghost'} onClick={() => claim(item.day)}>
-                  {isToday ? 'Claim' : 'Locked'}
-                </Button>
-              )}
-            </motion.div>
-          );
-        })}
+        <div className="relative flex items-center justify-between px-4 py-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-xl opacity-70"
+            style={{ background: 'rgba(0,0,0,0.25)' }}
+          >
+            <ArrowLeft size={18} className="text-white" />
+          </button>
+
+          <motion.h1
+            className="text-4xl font-black tracking-wider text-center"
+            style={{
+              fontFamily: "'Fredoka One', cursive",
+              color: '#f5c842',
+              textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(245,200,66,0.3)',
+            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            GIFTS
+          </motion.h1>
+
+          <div className="w-9" /> {/* spacer */}
+        </div>
+
+        {/* Bottom ribbon fold */}
+        <div className="relative h-4 overflow-hidden">
+          <div
+            className="absolute inset-x-0 -bottom-2 h-6"
+            style={{
+              background: 'linear-gradient(180deg, rgba(139,0,0,0.8), transparent)',
+              clipPath: 'polygon(0 0, 50% 100%, 100% 0)',
+            }}
+          />
+        </div>
       </div>
+
+      {/* ── Cards ── */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-4 max-w-lg mx-auto w-full pb-8">
+        <DailyBonusCard />
+
+        <InviteFriendsCard />
+
+        <RoyalsCard />
+
+        <SocialFollowCard />
+
+        {/* Promo code section */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <motion.button
+            className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-base"
+            style={{
+              background: 'linear-gradient(135deg, #c2410c, #f97316)',
+              color: 'white',
+              boxShadow: '0 4px 14px rgba(249,115,22,0.3)',
+            }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setShowPromo(true)}
+          >
+            <Tag size={18} />
+            ADD PROMO CODE
+          </motion.button>
+        </motion.div>
+      </div>
+
+      <PromoCodeModal open={showPromo} onClose={() => setShowPromo(false)} />
     </div>
   );
 }
