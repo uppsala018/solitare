@@ -1,23 +1,45 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useTimer(running: boolean) {
-  const [seconds, setSeconds] = useState(0);
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
+const TOTAL = 300; // 5:00
+
+export function useTimer(onExpire?: () => void) {
+  const [timeLeft, setTimeLeft] = useState(TOTAL);
+  const [running, setRunning] = useState(false);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
 
   useEffect(() => {
-    if (running) {
-      ref.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } else if (ref.current) {
-      clearInterval(ref.current);
-    }
-    return () => { if (ref.current) clearInterval(ref.current); };
+    if (!running) return;
+    const id = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          setRunning(false);
+          onExpireRef.current?.();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
   }, [running]);
 
-  const reset = () => setSeconds(0);
+  const start  = useCallback(() => setRunning(true), []);
+  const pause  = useCallback(() => setRunning(false), []);
+  const reset  = useCallback(() => { setRunning(false); setTimeLeft(TOTAL); }, []);
 
-  const formatted = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  const mm = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+  const ss = String(timeLeft % 60).padStart(2, '0');
 
-  return { seconds, formatted, reset };
+  return {
+    timeLeft,
+    running,
+    formatted: `${mm}:${ss}`,
+    bonus: timeLeft * 2,
+    start,
+    pause,
+    reset,
+  };
 }

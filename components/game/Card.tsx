@@ -1,54 +1,103 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-import type { Card as CardType } from '@/lib/cardUtils';
-import { rankLabel, suitSymbol, isRed } from '@/lib/cardUtils';
+import { useDrag } from 'react-dnd';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Card as CardType, MoveSource } from '@/lib/gameLogic';
+import { isRed, rankLabel, suitSymbol } from '@/lib/gameLogic';
+import { DRAG_TYPE, type DragItem } from '@/types/game';
 
 interface CardProps {
   card: CardType;
+  source?: MoveSource;
+  stackCards?: CardType[];
   onClick?: () => void;
-  draggable?: boolean;
-  style?: React.CSSProperties;
+  onDoubleClick?: () => void;
+  isDimmed?: boolean;
 }
 
-export default function Card({ card, onClick, style }: CardProps) {
-  const red = isRed(card.suit);
-
-  if (!card.faceUp) {
-    return (
-      <motion.div
-        className="card w-16 h-24 rounded-lg border border-purple-light cursor-pointer select-none"
-        style={{
-          background: 'linear-gradient(135deg, #2d1b69 0%, #1a0533 100%)',
-          ...style,
-        }}
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={onClick}
-      >
-        <div className="w-full h-full rounded-lg opacity-30"
-          style={{ backgroundImage: 'repeating-linear-gradient(45deg, #4c2d8f 0, #4c2d8f 1px, transparent 0, transparent 50%)', backgroundSize: '8px 8px' }}
-        />
-      </motion.div>
-    );
-  }
+export default function Card({
+  card, source, stackCards = [], onClick, onDoubleClick, isDimmed,
+}: CardProps) {
+  const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
+    type: DRAG_TYPE,
+    item: { cards: [card, ...stackCards], source: source! },
+    canDrag: () => !!source && card.faceUp,
+    collect: (m) => ({ isDragging: m.isDragging() }),
+  });
 
   return (
-    <motion.div
-      className={clsx(
-        'card w-16 h-24 rounded-lg border bg-white cursor-pointer select-none flex flex-col p-1',
-        red ? 'border-red-200 text-red-600' : 'border-gray-300 text-gray-900'
-      )}
-      style={style}
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.97 }}
+    <div
+      ref={source && card.faceUp ? (drag as unknown as React.Ref<HTMLDivElement>) : undefined}
+      className="w-full h-full relative select-none card"
+      style={{
+        opacity: isDragging || isDimmed ? 0.35 : 1,
+        cursor: source && card.faceUp ? 'grab' : 'default',
+      }}
       onClick={onClick}
-      layout
+      onDoubleClick={onDoubleClick}
     >
-      <span className="text-sm font-bold leading-none">{rankLabel(card.rank)}</span>
-      <span className="text-sm leading-none">{suitSymbol(card.suit)}</span>
-      <span className="flex-1 flex items-center justify-center text-2xl">{suitSymbol(card.suit)}</span>
-    </motion.div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={card.faceUp ? 'face-up' : 'face-down'}
+          className="absolute inset-0"
+          initial={{ rotateY: -90, opacity: 0 }}
+          animate={{ rotateY: 0, opacity: 1 }}
+          exit={{ rotateY: 90, opacity: 0 }}
+          transition={{ duration: 0.14 }}
+        >
+          {card.faceUp ? <FaceUp card={card} /> : <FaceDown />}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function FaceUp({ card }: { card: CardType }) {
+  const red   = isRed(card.suit);
+  const color = red ? '#dc2626' : '#1e1b4b';
+  const r     = rankLabel(card.rank);
+  const s     = suitSymbol(card.suit);
+
+  return (
+    <div
+      className="w-full h-full bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col overflow-hidden"
+      style={{ color }}
+    >
+      <div className="flex flex-col items-start px-0.5 pt-0.5 leading-none shrink-0">
+        <span className="font-black" style={{ fontSize: 'clamp(8px, 2.2vw, 12px)', lineHeight: 1.1 }}>{r}</span>
+        <span style={{ fontSize: 'clamp(7px, 1.8vw, 10px)', lineHeight: 1 }}>{s}</span>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        <span style={{ fontSize: 'clamp(13px, 3.5vw, 22px)' }}>{s}</span>
+      </div>
+      <div
+        className="flex flex-col items-end px-0.5 pb-0.5 leading-none shrink-0"
+        style={{ transform: 'rotate(180deg)' }}
+      >
+        <span className="font-black" style={{ fontSize: 'clamp(8px, 2.2vw, 12px)', lineHeight: 1.1 }}>{r}</span>
+        <span style={{ fontSize: 'clamp(7px, 1.8vw, 10px)', lineHeight: 1 }}>{s}</span>
+      </div>
+    </div>
+  );
+}
+
+function FaceDown() {
+  return (
+    <div
+      className="w-full h-full rounded-lg overflow-hidden relative"
+      style={{ background: '#1a0533', border: '2px solid rgba(245,200,66,0.45)' }}
+    >
+      <div
+        className="absolute inset-1 rounded-sm"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(45deg, rgba(245,200,66,0.13) 0, rgba(245,200,66,0.13) 1px, transparent 0, transparent 50%), repeating-linear-gradient(-45deg, rgba(245,200,66,0.13) 0, rgba(245,200,66,0.13) 1px, transparent 0, transparent 50%)',
+          backgroundSize: '6px 6px',
+        }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="opacity-20" style={{ fontSize: 'clamp(13px, 3.5vw, 20px)' }}>♛</span>
+      </div>
+    </div>
   );
 }

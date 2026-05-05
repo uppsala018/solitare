@@ -1,4 +1,5 @@
-import { Howl } from 'howler';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Howl } = require('howler') as { Howl: any };
 
 type SoundName = 'cardFlip' | 'cardPlace' | 'win' | 'deal' | 'click' | 'coins';
 
@@ -11,13 +12,13 @@ const soundMap: Record<SoundName, string> = {
   coins:     '/sounds/coins.mp3',
 };
 
-const cache: Partial<Record<SoundName, Howl>> = {};
+const cache: Partial<Record<SoundName, typeof Howl>> = {};
 
 export function playSound(name: SoundName, volume = 0.6) {
   if (!cache[name]) {
     cache[name] = new Howl({ src: [soundMap[name]], volume });
   }
-  cache[name]!.play();
+  cache[name].play();
 }
 
 export function preloadSounds() {
