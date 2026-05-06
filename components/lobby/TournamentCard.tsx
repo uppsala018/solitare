@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 
 interface TournamentCardProps {
@@ -10,7 +11,7 @@ interface TournamentCardProps {
   onJoin?: () => void;
 }
 
-export default function TournamentCard({ title, prize, timeLeft, players, onJoin }: TournamentCardProps) {
+function TournamentCard({ title, prize, timeLeft, players, onJoin }: TournamentCardProps) {
   return (
     <motion.div
       className="rounded-2xl p-4 flex flex-col gap-3"
@@ -28,9 +29,10 @@ export default function TournamentCard({ title, prize, timeLeft, players, onJoin
       <div className="flex items-center justify-between">
         <span className="text-sm text-white/60">{players.toLocaleString()} players</span>
         <motion.button
-          className="px-4 py-1.5 rounded-full text-sm font-bold text-purple-deep gradient-gold"
+          className="min-h-11 px-4 py-1.5 rounded-full text-sm font-bold text-purple-deep gradient-gold"
           whileTap={{ scale: 0.95 }}
           onClick={onJoin}
+          aria-label={`Join ${title}`}
         >
           Join
         </motion.button>
@@ -38,3 +40,5 @@ export default function TournamentCard({ title, prize, timeLeft, players, onJoin
     </motion.div>
   );
 }
+
+export default memo(TournamentCard);

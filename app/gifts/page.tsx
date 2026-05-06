@@ -31,9 +31,10 @@ export default function GiftsPage() {
 
         <div className="relative flex items-center justify-between px-4 py-4">
           <button
-            onClick={() => router.back()}
-            className="p-2 rounded-xl opacity-70"
+            onClick={() => router.push('/lobby')}
+            className="min-h-11 min-w-11 p-2 rounded-xl opacity-70"
             style={{ background: 'rgba(0,0,0,0.25)' }}
+            aria-label="Back to lobby"
           >
             <ArrowLeft size={18} className="text-white" />
           </button>

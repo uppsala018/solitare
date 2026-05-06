@@ -134,10 +134,11 @@ function applyRemove(s: GameState, source: MoveSource): void {
   }
 }
 
-export function drawFromStock(state: GameState): GameState {
+export function drawFromStock(state: GameState, maxRedraws?: number): GameState {
   const s = deepClone(state);
   if (s.stock.length === 0) {
     if (s.waste.length === 0) return s;
+    if (typeof maxRedraws === 'number' && s.stockRedraws >= maxRedraws) return s;
     s.stock = [...s.waste].reverse().map((c) => ({ ...c, faceUp: false }));
     s.waste = [];
     s.stockRedraws += 1;

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Lock, CheckCircle2, Zap, Play, Target, Trophy, Gauge, Layers, GamepadIcon } from 'lucide-react';
@@ -23,7 +24,7 @@ interface MissionCardProps {
   onPlay?: () => void;
 }
 
-export default function MissionCard({
+function MissionCard({
   mission, index, isLocked, isRoyals, onClaim, onPlay,
 }: MissionCardProps) {
   const [claimed,   setClaimed]   = useState(false);
@@ -159,6 +160,8 @@ export default function MissionCard({
     </motion.div>
   );
 }
+
+export default memo(MissionCard);
 
 function StarBurst() {
   const particles = Array.from({ length: 16 }, (_, i) => {

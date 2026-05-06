@@ -3,8 +3,6 @@ import { getStripeServer } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GEM_PACKAGES, CASH_PACKAGES } from '@/lib/shopConfig';
 
-export const config = { api: { bodyParser: false } };
-
 export async function POST(req: NextRequest) {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;

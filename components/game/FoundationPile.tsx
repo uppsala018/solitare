@@ -39,7 +39,7 @@ export default function FoundationPile({ suit, cards, onDrop }: FoundationPilePr
   return (
     <div
       ref={drop as unknown as React.Ref<HTMLDivElement>}
-      className="w-full aspect-[2/3] rounded-lg flex items-center justify-center relative overflow-hidden"
+      className="w-full h-[var(--game-card-h)] rounded-lg flex items-center justify-center relative overflow-hidden"
       style={{
         background: complete ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.07)',
         border: `2px ${isOver && canDrop ? 'solid' : complete ? 'solid' : 'dashed'} ${borderColor}`,

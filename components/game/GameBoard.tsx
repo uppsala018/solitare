@@ -9,6 +9,8 @@ import type { DragItem } from '@/types/game';
 import { useGame } from '@/hooks/useGame';
 import { useTimer } from '@/hooks/useTimer';
 import { useSound } from '@/hooks/useSound';
+import { supabase } from '@/lib/supabase';
+import type { Tournament } from '@/types/database';
 import GameHeader from './GameHeader';
 import TableauPile from './TableauPile';
 import FoundationPile from './FoundationPile';
@@ -30,11 +32,30 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const [showEnd,        setShowEnd]        = useState(false);
   const [showRules,      setShowRules]      = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+  const [tournament, setTournament] = useState<Tournament | null>(null);
 
   const { playFlip, playPlace, playFoundation, playWin, playInvalid, playTick } = useSound();
 
   const started = useRef(false);
   const wonRef  = useRef(false);
+
+  useEffect(() => {
+    if (!tournamentId) {
+      setTournament(null);
+      return;
+    }
+
+    async function loadTournament() {
+      const { data, error } = await (supabase.from('tournaments') as any)
+        .select('id,name,theme,prize_pool,entry_fee,max_players,current_players,ends_at,multiplier,is_active,created_at')
+        .eq('id', tournamentId)
+        .single();
+      if (error) console.error('Failed to load tournament banner', error);
+      setTournament(data ?? null);
+    }
+
+    loadTournament();
+  }, [tournamentId]);
 
   function ensureStarted() {
     if (!started.current) { started.current = true; timer.start(); }
@@ -52,6 +73,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     if (game.isWon && !wonRef.current) {
       wonRef.current = true;
       playWin();
+      if (typeof navigator !== 'undefined') navigator.vibrate?.([50, 30, 50]);
       timer.pause();
       saveSession(timer.timeLeft);
       const t = setTimeout(() => setShowEnd(true), 700);
@@ -71,6 +93,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const handleDraw = () => {
     ensureStarted();
     draw();
+    if (typeof navigator !== 'undefined') navigator.vibrate?.(10);
     playFlip();
   };
 
@@ -78,6 +101,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     (item: DragItem, dest: 'foundation' | 'tableau', toPile?: number) => {
       ensureStarted();
       moveTo(item.source, dest, toPile);
+      if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
       playPlace();
       if (dest === 'foundation') playFoundation();
     },
@@ -89,7 +113,13 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       ensureStarted();
       const source: MoveSource = { type: 'tableau', pileIndex, cardIndex };
       const moved = autoMove(source);
-      if (moved) { playPlace(); } else { playInvalid(); }
+      if (moved) {
+        if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
+        playPlace();
+      } else {
+        if (typeof navigator !== 'undefined') navigator.vibrate?.(100);
+        playInvalid();
+      }
     },
     [autoMove, playPlace, playInvalid], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -107,7 +137,13 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     if (!game.waste.length) return;
     ensureStarted();
     const moved = autoMove({ type: 'waste' });
-    if (moved) playPlace(); else playInvalid();
+    if (moved) {
+      if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
+      playPlace();
+    } else {
+      if (typeof navigator !== 'undefined') navigator.vibrate?.(100);
+      playInvalid();
+    }
   }, [game.waste, autoMove, playPlace, playInvalid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUndo = () => {
@@ -143,10 +179,19 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
         score={game.score}
         timeLeft={timer.timeLeft}
         onSettings={() => setShowRules(true)}
+        tournamentName={tournament ? `${tournament.theme} - ${tournament.name}` : undefined}
+        tournamentPrizePool={tournament ? Number(tournament.prize_pool) : undefined}
       />
 
       {/* Top row: 4 foundations + gap + stock/waste */}
-      <div className="grid grid-cols-7 gap-0.5 px-2 mb-1.5">
+      <div
+        className="grid grid-cols-7 gap-1 px-2 mb-2 w-full max-w-5xl mx-auto"
+        style={{
+          ['--game-card-h' as string]: 'clamp(78px, 13.8vw, 158px)',
+          ['--game-card-fd-offset' as string]: 'clamp(14px, 2.2vw, 24px)',
+          ['--game-card-fu-offset' as string]: 'clamp(22px, 3.4vw, 38px)',
+        }}
+      >
         {SUITS.map((suit) => (
           <FoundationPile
             key={suit}
@@ -156,7 +201,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
           />
         ))}
         {/* col 5: spacer */}
-        <div className="aspect-[2/3] rounded-lg opacity-0 pointer-events-none" />
+          <div className="h-[var(--game-card-h)] rounded-lg opacity-0 pointer-events-none" />
         {/* cols 6-7: stock + waste */}
         <div className="col-span-2">
           <StockPile
@@ -169,7 +214,14 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       </div>
 
       {/* Tableau */}
-      <div className="grid grid-cols-7 gap-0.5 px-2 pb-2 flex-1">
+      <div
+        className="grid grid-cols-7 gap-1 px-2 pb-2 flex-1 w-full max-w-5xl mx-auto"
+        style={{
+          ['--game-card-h' as string]: 'clamp(78px, 13.8vw, 158px)',
+          ['--game-card-fd-offset' as string]: 'clamp(14px, 2.2vw, 24px)',
+          ['--game-card-fu-offset' as string]: 'clamp(22px, 3.4vw, 38px)',
+        }}
+      >
         {game.tableau.map((pile, i) => (
           <TableauPile
             key={i}

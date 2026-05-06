@@ -37,13 +37,18 @@ export function useDailyBonus() {
   const tickRef                             = useRef<ReturnType<typeof setInterval>>();
 
   const checkStatus = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setCanClaim(false);
+      setLoading(false);
+      return;
+    }
 
-    const { data } = await db.from('daily_bonus_claims')
+    const { data, error } = await db.from('daily_bonus_claims')
       .select('claimed_at, streak_day')
       .eq('user_id', user.id)
       .order('claimed_at', { ascending: false })
       .limit(1);
+    if (error) console.error('Failed to check daily bonus status', error);
 
     const last = data?.[0] ?? null;
 
@@ -99,21 +104,40 @@ export function useDailyBonus() {
   const claimBonus = useCallback(async () => {
     if (!user || !canClaim || !profile) return 0;
 
+    const { data: todayClaim, error: todayError } = await db.from('daily_bonus_claims')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('claimed_at', `${todayUTC()}T00:00:00.000Z`)
+      .limit(1);
+
+    if (todayError) console.error('Failed to verify daily bonus claim', todayError);
+    if (todayClaim?.length) {
+      setCanClaim(false);
+      setSecondsLeft(secondsUntilMidnightUTC());
+      return 0;
+    }
+
     const reward = STREAK_REWARDS[Math.min(streakDay - 1, 6)];
 
-    await db.from('daily_bonus_claims').insert({
+    const { error: claimError } = await db.from('daily_bonus_claims').insert({
       user_id:        user.id,
       claimed_at:     new Date().toISOString(),
       tokens_awarded: reward,
       streak_day:     streakDay,
     });
+    if (claimError) {
+      console.error('Failed to claim daily bonus', claimError);
+      await checkStatus();
+      return 0;
+    }
 
     const newTokens = (profile.lightning_tokens ?? 0) + reward;
     const updates: Record<string, number> = { lightning_tokens: newTokens };
 
     if (streakDay === 7) updates.gems = (profile.gems ?? 0) + STREAK_GEM_BONUS;
 
-    await db.from('profiles').update(updates).eq('id', user.id);
+    const { error: profileError } = await db.from('profiles').update(updates).eq('id', user.id);
+    if (profileError) console.error('Failed to update daily bonus balance', profileError);
 
     setCanClaim(false);
     setJustClaimed(true);
@@ -121,7 +145,7 @@ export function useDailyBonus() {
     setTimeout(() => setJustClaimed(false), 3000);
 
     return reward;
-  }, [user, profile, canClaim, streakDay]);
+  }, [user, profile, canClaim, streakDay, checkStatus]);
 
   const formattedCountdown = (() => {
     const h = Math.floor(secondsLeft / 3600);

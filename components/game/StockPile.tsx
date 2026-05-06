@@ -52,7 +52,7 @@ export default function StockPile({ stockCount, waste, onDraw, onWasteTap }: Sto
     <div className="flex gap-0.5 w-full">
       {/* Stock */}
       <motion.div
-        className="flex-1 aspect-[2/3] rounded-lg flex items-center justify-center cursor-pointer relative overflow-hidden"
+        className="flex-1 h-[var(--game-card-h)] rounded-lg flex items-center justify-center cursor-pointer relative overflow-hidden"
         style={{ background: '#1a0533', border: '2px solid rgba(245,200,66,0.4)' }}
         whileTap={{ scale: 0.93 }}
         onClick={onDraw}
@@ -78,7 +78,7 @@ export default function StockPile({ stockCount, waste, onDraw, onWasteTap }: Sto
 
       {/* Waste */}
       <div
-        className="flex-1 aspect-[2/3] rounded-lg overflow-hidden"
+        className="flex-1 h-[var(--game-card-h)] rounded-lg overflow-hidden"
         style={
           wasteTop
             ? undefined

@@ -23,10 +23,10 @@ type Action =
   | { type: 'NEW_GAME' }
   | { type: 'SET_GAME'; game: GL.GameState };
 
-function reducer(state: State, action: Action): State {
+function reducer(state: State, action: Action, maxRedraws?: number): State {
   switch (action.type) {
     case 'DRAW':
-      return { game: GL.drawFromStock(state.game), history: [...state.history.slice(-50), state.game] };
+      return { game: GL.drawFromStock(state.game, maxRedraws), history: [...state.history.slice(-50), state.game] };
 
     case 'MOVE_FOUNDATION': {
       const next = GL.moveToFoundation(state.game, action.source);
@@ -56,7 +56,11 @@ function reducer(state: State, action: Action): State {
 }
 
 export function useGame(tournamentId?: string) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+  const maxRedraws = tournamentId ? 3 : undefined;
+  const [state, baseDispatch] = useReducer(
+    (current: State, action: Action) => reducer(current, action, maxRedraws),
+    undefined,
+    () => ({
     game: GL.initGame(),
     history: [] as GL.GameState[],
   }));
@@ -78,14 +82,14 @@ export function useGame(tournamentId?: string) {
     prevScore.current = state.game.score;
   }, [state.game.score]);
 
-  const draw = useCallback(() => dispatch({ type: 'DRAW' }), []);
+  const draw = useCallback(() => baseDispatch({ type: 'DRAW' }), []);
 
   const moveTo = useCallback(
     (source: GL.MoveSource, dest: 'foundation' | 'tableau', toPile?: number) => {
       if (dest === 'foundation') {
-        dispatch({ type: 'MOVE_FOUNDATION', source });
+        baseDispatch({ type: 'MOVE_FOUNDATION', source });
       } else if (typeof toPile === 'number') {
-        dispatch({ type: 'MOVE_TABLEAU', source, toPile });
+        baseDispatch({ type: 'MOVE_TABLEAU', source, toPile });
       }
     },
     []
@@ -95,18 +99,18 @@ export function useGame(tournamentId?: string) {
     const best = GL.findBestMove(gameRef.current, source);
     if (!best) return false;
     if (best.dest === 'foundation') {
-      dispatch({ type: 'MOVE_FOUNDATION', source });
+      baseDispatch({ type: 'MOVE_FOUNDATION', source });
     } else {
-      dispatch({ type: 'MOVE_TABLEAU', source, toPile: best.pileIndex });
+      baseDispatch({ type: 'MOVE_TABLEAU', source, toPile: best.pileIndex });
     }
     return true;
   }, []);
 
-  const undo    = useCallback(() => dispatch({ type: 'UNDO' }), []);
+  const undo    = useCallback(() => baseDispatch({ type: 'UNDO' }), []);
 
   const newGame = useCallback(() => {
     prevScore.current = 0;
-    dispatch({ type: 'NEW_GAME' });
+    baseDispatch({ type: 'NEW_GAME' });
   }, []);
 
   const startAutoComplete = useCallback(() => {
@@ -115,7 +119,7 @@ export function useGame(tournamentId?: string) {
       const next = GL.autoCompleteStep(current);
       if (!next) return;
       current = next;
-      dispatch({ type: 'SET_GAME', game: next });
+      baseDispatch({ type: 'SET_GAME', game: next });
       if (!next.isWon) setTimeout(step, 80);
     }
     step();
@@ -126,7 +130,7 @@ export function useGame(tournamentId?: string) {
       if (!user) return;
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('game_sessions') as any).insert({
+        const { error: sessionError } = await (supabase.from('game_sessions') as any).insert({
           user_id: user.id,
           tournament_id: tournamentId ?? null,
           score: gameRef.current.score,
@@ -134,7 +138,18 @@ export function useGame(tournamentId?: string) {
           time_remaining: timeRemaining,
           completed: gameRef.current.isWon,
         });
-      } catch (_) { /* silent */ }
+        if (sessionError) console.error('Failed to save game session', sessionError);
+
+        if (tournamentId) {
+          const { error: scoreError } = await (supabase as any).rpc('submit_tournament_score', {
+            p_tournament_id: tournamentId,
+            p_score: gameRef.current.score,
+          });
+          if (scoreError) console.error('Failed to submit tournament score', scoreError);
+        }
+      } catch (error) {
+        console.error('Failed to save game state', error);
+      }
     },
     [user, tournamentId]
   );

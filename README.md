@@ -1,36 +1,151 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Solitaire Crown
 
-## Getting Started
+Solitaire Crown is a mobile-first solitaire game built with Next.js, Supabase, Stripe, Framer Motion, and PWA support. It includes lobby missions, card collection, tournament entry, realtime leaderboards, profile history, and shop flows.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 14 App Router
+- React 18
+- TypeScript
+- Tailwind CSS
+- Supabase Auth, Postgres, Realtime, RLS, RPC
+- Stripe Checkout and webhooks
+- Framer Motion
+- Zustand persisted client state
+- next-pwa
+- Capacitor dependencies for future iOS/Android packaging
+
+## Local Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+STRIPE_SECRET_KEY=placeholder
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=placeholder
+STRIPE_WEBHOOK_SECRET=
+STRIPE_ROYALS_MONTHLY_PRICE_ID=
+STRIPE_ROYALS_ANNUAL_PRICE_ID=
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+TOURNAMENT_END_SECRET=change-me
+```
+
+3. Run migrations in Supabase SQL editor in order:
+
+```text
+supabase/migrations/001_initial.sql
+supabase/migrations/002_promo_codes.sql
+supabase/migrations/003_notifications.sql
+supabase/migrations/004_tournament_functions.sql
+```
+
+4. Optional seed data:
+
+```text
+supabase/seed.sql
+```
+
+5. Start development:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stripe Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Stripe is optional during development. If keys are set to `placeholder`, purchase APIs return `503` instead of crashing the app.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For live Stripe:
 
-## Learn More
+1. Create products/prices in Stripe for Royals monthly and annual plans.
+2. Put the price IDs in `STRIPE_ROYALS_MONTHLY_PRICE_ID` and `STRIPE_ROYALS_ANNUAL_PRICE_ID`.
+3. Create a webhook endpoint pointing to:
 
-To learn more about Next.js, take a look at the following resources:
+```text
+https://your-domain.com/api/stripe/webhook
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Subscribe to at least:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+checkout.session.completed
+customer.subscription.deleted
+```
 
-## Deploy on Vercel
+5. Put the webhook signing secret in `STRIPE_WEBHOOK_SECRET`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploy to Vercel with these environment variables configured:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+STRIPE_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+STRIPE_ROYALS_MONTHLY_PRICE_ID
+STRIPE_ROYALS_ANNUAL_PRICE_ID
+NEXT_PUBLIC_APP_URL
+TOURNAMENT_END_SECRET
+```
+
+Build check:
+
+```bash
+npm run build
+```
+
+## Tournament Operations
+
+Tournament entry and score submission use Supabase RPC functions from `004_tournament_functions.sql`:
+
+- `enter_tournament_atomic`
+- `submit_tournament_score`
+- `get_tournament_leaderboard`
+
+This avoids inconsistent client-side balance, entry, and player-count updates.
+
+To close a tournament and distribute prizes, call:
+
+```bash
+curl -X POST https://your-domain.com/api/tournaments/end \
+  -H "Content-Type: application/json" \
+  -H "x-secret: $TOURNAMENT_END_SECRET" \
+  -d '{"tournamentId":"TOURNAMENT_UUID"}'
+```
+
+## Mobile Builds
+
+Capacitor packages are installed, but production mobile export needs a separate static/mobile build strategy because this app uses server API routes for Stripe and tournaments. Do not rely on `next export` for the current app without replacing those server routes with hosted APIs.
+
+## Folder Structure
+
+- `app/` - Next.js routes, API routes, app shell, global pages
+- `components/` - game, lobby, gifts, collection, and UI components
+- `hooks/` - Supabase, game, shop, tournament, sound, and daily feature hooks
+- `lib/` - Supabase clients, Stripe helper, sound engine, game logic, shop config
+- `store/` - persisted Zustand game settings
+- `supabase/` - SQL migrations and seed data
+- `types/` - shared TypeScript types
+- `public/` - PWA manifest, icons, robots, sitemap, generated service worker
+
+## Verification
+
+Current baseline:
+
+```bash
+npx tsc --noEmit
+npm run build
+```
+
+`npm run lint` still requires adding an ESLint config before it can run non-interactively.

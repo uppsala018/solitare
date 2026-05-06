@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useDrag } from 'react-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Card as CardType, MoveSource } from '@/lib/gameLogic';
@@ -15,7 +16,7 @@ interface CardProps {
   isDimmed?: boolean;
 }
 
-export default function Card({
+function Card({
   card, source, stackCards = [], onClick, onDoubleClick, isDimmed,
 }: CardProps) {
   const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
@@ -51,6 +52,8 @@ export default function Card({
     </div>
   );
 }
+
+export default memo(Card);
 
 function FaceUp({ card }: { card: CardType }) {
   const red   = isRed(card.suit);

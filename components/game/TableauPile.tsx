@@ -6,9 +6,9 @@ import { canMoveToTableau } from '@/lib/gameLogic';
 import { DRAG_TYPE, type DragItem } from '@/types/game';
 import GameCard from './Card';
 
-const CARD_H    = 72;
-const FD_OFFSET = 16; // face-down overlap offset
-const FU_OFFSET = 24; // face-up overlap offset
+const CARD_H = 'var(--game-card-h)';
+const FD_OFFSET = 'var(--game-card-fd-offset)';
+const FU_OFFSET = 'var(--game-card-fu-offset)';
 
 interface TableauPileProps {
   pile: Card[];
@@ -31,11 +31,10 @@ export default function TableauPile({
     collect: (m) => ({ isOver: m.isOver(), canDrop: m.canDrop() }),
   });
 
-  // Compute stacked height
-  const totalH =
-    pile.length === 0
-      ? CARD_H
-      : pile.slice(0, -1).reduce((acc, c) => acc + (c.faceUp ? FU_OFFSET : FD_OFFSET), 0) + CARD_H;
+  const offsets = pile.slice(0, -1).map((card) => (card.faceUp ? FU_OFFSET : FD_OFFSET));
+  const totalH = pile.length === 0
+    ? CARD_H
+    : `calc(${CARD_H}${offsets.map((offset) => ` + ${offset}`).join('')})`;
 
   return (
     <div
@@ -58,7 +57,8 @@ export default function TableauPile({
       )}
 
       {pile.map((card, i) => {
-        const top       = pile.slice(0, i).reduce((acc, c) => acc + (c.faceUp ? FU_OFFSET : FD_OFFSET), 0);
+        const topOffsets = pile.slice(0, i).map((c) => (c.faceUp ? FU_OFFSET : FD_OFFSET));
+        const top = topOffsets.length ? `calc(${topOffsets.join(' + ')})` : 0;
         const source: MoveSource = { type: 'tableau', pileIndex, cardIndex: i };
         const stackCards = pile.slice(i + 1);
 

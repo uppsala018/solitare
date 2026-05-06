@@ -1,29 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import TopBar from '@/components/lobby/TopBar';
 import TournamentCard from '@/components/lobby/TournamentCard';
+import TournamentEntryModal from '@/components/lobby/TournamentEntryModal';
 import DailyBlastContent from '@/components/lobby/DailyBlastContent';
 import Button from '@/components/ui/Button';
 import { useGameStore } from '@/store/gameStore';
 import { useRouter } from 'next/navigation';
-
-const TOURNAMENTS = [
-  { title: 'Daily Classic',   prize: '5,000 Coins',  timeLeft: '2h 14m', players: 1284 },
-  { title: 'Speed Challenge', prize: '10,000 Coins', timeLeft: '45m',    players: 876  },
-  { title: 'Weekly Grand Prix',prize: '50,000 Coins',timeLeft: '3d 6h',  players: 4521 },
-];
+import { useTournament } from '@/hooks/useTournament';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import type { Tournament } from '@/types/database';
 
 export default function LobbyPage() {
   const { newGame }       = useGameStore();
   const router            = useRouter();
+  const { profile }       = useAuth();
+  const { activeTournaments, loading, fetchActiveTournaments, enterTournament } = useTournament();
+  const { showToast } = useToast();
   const [showBlast, setShowBlast] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+
+  useEffect(() => {
+    fetchActiveTournaments();
+  }, [fetchActiveTournaments]);
 
   function handlePlay() {
     newGame();
     router.push('/game');
+  }
+
+  async function handleTournamentEnter(tournamentId: string) {
+    const result = await enterTournament(tournamentId);
+    if (result.success) {
+      setSelectedTournament(null);
+      showToast({
+        type: 'tournament',
+        title: 'Entered',
+        message: 'Entry confirmed. Play your best game.',
+        emoji: '🏆',
+      });
+      router.push(`/game?tournamentId=${tournamentId}`);
+    }
+    return result;
   }
 
   return (
@@ -96,9 +118,24 @@ export default function LobbyPage() {
         <section>
           <h3 className="text-base text-white/70 font-semibold mb-3">⚔️ Live Tournaments</h3>
           <div className="flex flex-col gap-3">
-            {TOURNAMENTS.map((t) => (
-              <TournamentCard key={t.title} {...t} />
+            {loading && [0, 1, 2].map((i) => (
+              <div key={i} className="h-32 rounded-2xl bg-white/10 animate-pulse" />
             ))}
+            {!loading && activeTournaments.map((tournament) => (
+              <TournamentCard
+                key={tournament.id}
+                title={tournament.name}
+                prize={`$${Number(tournament.prize_pool).toFixed(2)}`}
+                timeLeft={formatTimeLeft(tournament.ends_at)}
+                players={tournament.current_players}
+                onJoin={() => setSelectedTournament(tournament)}
+              />
+            ))}
+            {!loading && activeTournaments.length === 0 && (
+              <div className="rounded-2xl p-4 text-center text-sm text-white/40 bg-white/5">
+                No live tournaments right now.
+              </div>
+            )}
           </div>
         </section>
       </main>
@@ -126,6 +163,24 @@ export default function LobbyPage() {
           </>
         )}
       </AnimatePresence>
+
+      <TournamentEntryModal
+        tournament={selectedTournament}
+        userBalance={profile?.cash_balance ?? 0}
+        onClose={() => setSelectedTournament(null)}
+        onConfirm={handleTournamentEnter}
+      />
     </div>
   );
+}
+
+function formatTimeLeft(endsAt: string) {
+  const ms = new Date(endsAt).getTime() - Date.now();
+  if (ms <= 0) return 'Ended';
+  const minutes = Math.floor(ms / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  return `${minutes}m`;
 }
