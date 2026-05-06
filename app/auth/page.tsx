@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 type Mode = 'login' | 'signup';
 
 export default function AuthPage() {
-  const { user, loading: authLoading, signIn, signInWithGoogle, signUp } = useAuth();
+  const { user, loading: authLoading, signIn, signInWithGoogle, signUp, resetPassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -61,6 +61,20 @@ export default function AuthPage() {
       setLoading(false);
       setError(result.error);
     }
+  }
+
+  async function handleResetPassword() {
+    if (!email.trim()) {
+      setError('Enter your email first, then click reset password.');
+      return;
+    }
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+    const result = await resetPassword(email);
+    setLoading(false);
+    if (result.error) setError(result.error);
+    else setMessage('Password reset email sent. Check your inbox.');
   }
 
   return (
@@ -185,6 +199,19 @@ export default function AuthPage() {
           </motion.button>
         </form>
 
+        {loading && (
+          <button
+            type="button"
+            className="w-full mt-2 text-white/45 text-xs underline underline-offset-2"
+            onClick={() => {
+              setLoading(false);
+              setError('Sign in was cancelled. Try again, or use Google login.');
+            }}
+          >
+            Cancel sign in
+          </button>
+        )}
+
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-white/10" />
           <span className="text-white/35 text-xs">or</span>
@@ -211,6 +238,17 @@ export default function AuthPage() {
             {mode === 'login' ? 'Sign Up' : 'Sign In'}
           </button>
         </p>
+
+        {mode === 'login' && (
+          <button
+            type="button"
+            className="block mx-auto mt-3 text-white/35 text-xs underline underline-offset-2"
+            onClick={handleResetPassword}
+            disabled={loading}
+          >
+            Forgot password?
+          </button>
+        )}
       </motion.div>
     </div>
   );
