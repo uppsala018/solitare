@@ -4,6 +4,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import * as GL from '@/lib/gameLogic';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
+import { recordGameMissionProgress } from '@/lib/dailyMissionProgress';
 
 export interface ScoreEvent {
   id: string;
@@ -147,6 +148,14 @@ export function useGame(tournamentId?: string) {
           });
           if (scoreError) console.error('Failed to submit tournament score', scoreError);
         }
+
+        await recordGameMissionProgress({
+          userId: user.id,
+          score: gameRef.current.score,
+          isWon: gameRef.current.isWon,
+          timeUsed: 300 - timeRemaining,
+          tournamentId,
+        });
       } catch (error) {
         console.error('Failed to save game state', error);
       }

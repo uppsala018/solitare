@@ -22,6 +22,9 @@ import RulesModal from './RulesModal';
 import SettingsModal from '@/components/ui/SettingsModal';
 import Particles from '@/components/ui/Particles';
 import { useGameStore } from '@/store/gameStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useTournament } from '@/hooks/useTournament';
+import TournamentResultsModal from '@/components/lobby/TournamentResultsModal';
 
 interface GameBoardProps {
   tournamentId?: string;
@@ -37,9 +40,12 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const [showRules,      setShowRules]      = useState(false);
   const [showSettings,   setShowSettings]   = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+  const [showTournamentResults, setShowTournamentResults] = useState(false);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const { hapticsEnabled, autoCompleteEnabled } = useGameStore();
+  const { user } = useAuth();
+  const { leaderboard, subscribeToLeaderboard, enterTournament } = useTournament();
 
   const { playFlip, playPlace, playFoundation, playWin, playInvalid, playTick } = useSound();
 
@@ -64,6 +70,12 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     loadTournament();
   }, [tournamentId]);
 
+  useEffect(() => {
+    if (!tournamentId) return;
+    const unsubscribe = subscribeToLeaderboard(tournamentId);
+    return unsubscribe;
+  }, [tournamentId, subscribeToLeaderboard]);
+
   function ensureStarted() {
     if (!started.current) { started.current = true; timer.start(); }
   }
@@ -85,7 +97,10 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.([50, 30, 50]);
       timer.pause();
       saveSession(timer.timeLeft);
-      const t = setTimeout(() => setShowEnd(true), 700);
+      const t = setTimeout(() => {
+        if (tournamentId) setShowTournamentResults(true);
+        else setShowEnd(true);
+      }, 700);
       return () => clearTimeout(t);
     }
   }, [game.isWon]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,11 +188,13 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const handleEndConfirm = () => {
     timer.pause();
     saveSession(timer.timeLeft);
-    setShowEnd(true);
+    if (tournamentId) setShowTournamentResults(true);
+    else setShowEnd(true);
     setShowConfirmEnd(false);
   };
 
   const timeUsed = 300 - timer.timeLeft;
+  const finalScore = game.score + (game.isWon ? timer.bonus : 0);
 
   /* ── layout ── */
 
@@ -275,7 +292,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       <Particles active={showConfetti} kind="confetti" />
 
       <EndGameModal
-        open={showEnd}
+        open={showEnd && !tournamentId}
         isWon={game.isWon}
         score={game.score}
         moves={game.moves}
@@ -283,6 +300,27 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
         timeBonus={timer.bonus}
         isTournament={!!tournamentId}
         onPlayAgain={handleNewGame}
+      />
+
+      <TournamentResultsModal
+        open={showTournamentResults}
+        tournament={tournament}
+        myScore={finalScore}
+        myMoves={game.moves}
+        leaderboard={leaderboard}
+        currentUserId={user?.id ?? ''}
+        onPlayAgain={async () => {
+          if (!tournamentId) return;
+          const result = await enterTournament(tournamentId);
+          if (result.success) {
+            setShowTournamentResults(false);
+            handleNewGame();
+          }
+        }}
+        onClose={() => {
+          setShowTournamentResults(false);
+          setShowEnd(false);
+        }}
       />
 
       <RulesModal open={showRules} onClose={() => setShowRules(false)} />
