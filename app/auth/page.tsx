@@ -1,26 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
 type Mode = 'login' | 'signup';
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const { user, loading: authLoading, signIn, signInWithGoogle, signUp } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [mode, setMode]         = useState<Mode>('login');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError]       = useState<string | null>(null);
+  const [message, setMessage]   = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'verification_failed') {
+      setError('Email verification failed. Please sign in again or request a new signup email.');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace('/lobby');
+  }, [authLoading, user, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     setLoading(true);
 
     const result =
@@ -32,8 +45,21 @@ export default function AuthPage() {
 
     if (result.error) {
       setError(result.error);
+    } else if ('needsConfirmation' in result && result.needsConfirmation) {
+      setMessage('Account created. Check your email and click the verification link to continue.');
     } else {
-      router.push('/lobby');
+      router.replace('/lobby');
+    }
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+    const result = await signInWithGoogle();
+    if (result.error) {
+      setLoading(false);
+      setError(result.error);
     }
   }
 
@@ -136,6 +162,16 @@ export default function AuthPage() {
                 {error}
               </motion.p>
             )}
+            {message && (
+              <motion.p
+                className="text-teal text-xs text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {message}
+              </motion.p>
+            )}
           </AnimatePresence>
 
           {/* Submit */}
@@ -148,6 +184,23 @@ export default function AuthPage() {
             {loading ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </motion.button>
         </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-white/35 text-xs">or</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
+        <motion.button
+          type="button"
+          disabled={loading}
+          className="w-full min-h-11 rounded-2xl font-bold text-white text-sm border border-white/15 bg-white/10 disabled:opacity-60 flex items-center justify-center gap-2"
+          whileTap={{ scale: 0.97 }}
+          onClick={handleGoogle}
+        >
+          <span className="w-5 h-5 rounded-full bg-white text-black flex items-center justify-center font-black text-xs">G</span>
+          Continue with Google
+        </motion.button>
 
         <p className="text-center text-white/40 text-xs mt-5">
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
