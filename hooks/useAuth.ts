@@ -12,6 +12,7 @@ interface UseAuthReturn {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -52,10 +53,14 @@ export function useAuth(): UseAuthReturn {
   };
 
   const signUp = async (email: string, password: string, username: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: {
+        data: { username },
+        emailRedirectTo: origin ? `${origin}/auth/callback?next=/lobby` : undefined,
+      },
     });
     return { error: error?.message ?? null };
   };
@@ -66,5 +71,9 @@ export function useAuth(): UseAuthReturn {
     setProfile(null);
   };
 
-  return { user, profile, loading, signIn, signUp, signOut };
+  const refreshProfile = useCallback(async () => {
+    if (user) await fetchProfile(user.id);
+  }, [user, fetchProfile]);
+
+  return { user, profile, loading, signIn, signUp, signOut, refreshProfile };
 }

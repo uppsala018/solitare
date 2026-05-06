@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gem, ArrowLeft, Crown, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useShop } from '@/hooks/useShop';
 import { CASH_PACKAGES, GEM_PACKAGES, ROYALS_PERKS, ROYALS_PLANS } from '@/lib/shopConfig';
 
 export default function ShopPage() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const searchParams = useSearchParams();
+  const { profile, refreshProfile } = useAuth();
   const { loading, error, setError, purchaseGems, purchaseCash, subscribeRoyals } = useShop();
   const [tab, setTab] = useState<'gems' | 'cash' | 'royals'>('gems');
+  const paymentSuccess = searchParams.get('success') === '1';
+
+  useEffect(() => {
+    if (!paymentSuccess) return;
+    refreshProfile();
+    const timer = setTimeout(refreshProfile, 2500);
+    return () => clearTimeout(timer);
+  }, [paymentSuccess, refreshProfile]);
 
   const stripeReady = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
     && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY !== 'placeholder';
@@ -69,6 +79,17 @@ export default function ShopPage() {
       </div>
 
       <AnimatePresence>
+        {paymentSuccess && (
+          <motion.div
+            className="mx-4 mb-2 px-4 py-2 rounded-xl text-sm text-center font-semibold"
+            style={{ background: 'rgba(0,212,170,0.15)', border: '1px solid rgba(0,212,170,0.4)', color: '#00d4aa' }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            Payment complete. Balance updates after Stripe webhook confirmation.
+          </motion.div>
+        )}
         {error && (
           <motion.div
             className="mx-4 px-4 py-2 rounded-xl text-sm text-center font-semibold"
