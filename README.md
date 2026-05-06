@@ -32,8 +32,6 @@ SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=placeholder
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=placeholder
 STRIPE_WEBHOOK_SECRET=
-STRIPE_ROYALS_MONTHLY_PRICE_ID=
-STRIPE_ROYALS_ANNUAL_PRICE_ID=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 TOURNAMENT_END_SECRET=change-me
 ```
@@ -65,8 +63,8 @@ Stripe is optional during development. If keys are set to `placeholder`, purchas
 
 For live Stripe:
 
-1. Create products/prices in Stripe for Royals monthly and annual plans.
-2. Put the price IDs in `STRIPE_ROYALS_MONTHLY_PRICE_ID` and `STRIPE_ROYALS_ANNUAL_PRICE_ID`.
+1. Set prices in `lib/shopConfig.ts`.
+2. The app sends inline `price_data` to Stripe Checkout, so you do not need to manually create Stripe products or prices.
 3. Create a webhook endpoint pointing to:
 
 ```text
@@ -93,8 +91,6 @@ SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_WEBHOOK_SECRET
-STRIPE_ROYALS_MONTHLY_PRICE_ID
-STRIPE_ROYALS_ANNUAL_PRICE_ID
 NEXT_PUBLIC_APP_URL
 TOURNAMENT_END_SECRET
 ```

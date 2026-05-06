@@ -23,7 +23,7 @@ export function useShop() {
       const res = await fetch('/api/stripe/create-checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ packageId, packageType, userId: user.id }),
+        body:    JSON.stringify({ packageId, packageType, userId: user.id, email: user.email }),
       });
       const json = await res.json();
       if (json.error) throw new Error(json.error);

@@ -19,24 +19,18 @@ export async function POST(req: NextRequest) {
       const plan = ROYALS_PLANS.find((p) => p.id === packageId);
       if (!plan) return NextResponse.json({ error: 'Plan not found' }, { status: 400 });
 
-      const priceId = packageId === 'annual'
-        ? process.env.STRIPE_ROYALS_ANNUAL_PRICE_ID
-        : process.env.STRIPE_ROYALS_MONTHLY_PRICE_ID;
-
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         payment_method_types: ['card'],
-        line_items: priceId
-          ? [{ price: priceId, quantity: 1 }]
-          : [{
-              price_data: {
-                currency: 'usd',
-                product_data: { name: `Solitaire Crown ${plan.label}` },
-                unit_amount: Math.round(plan.price * 100),
-                recurring: { interval: packageId === 'annual' ? 'year' : 'month' },
-              },
-              quantity: 1,
-            }],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: { name: `Solitaire Crown ${plan.label}` },
+            unit_amount: Math.round(plan.price * 100),
+            recurring: { interval: packageId === 'annual' ? 'year' : 'month' },
+          },
+          quantity: 1,
+        }],
         success_url: `${appUrl}/shop?royals=success`,
         cancel_url: `${appUrl}/shop`,
         metadata: { userId, packageId, packageType },
