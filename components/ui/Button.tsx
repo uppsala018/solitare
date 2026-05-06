@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { soundEngine } from '@/lib/sounds';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'gold' | 'teal' | 'purple' | 'ghost';
@@ -21,12 +22,16 @@ const sizes = {
   lg: 'px-7 py-3.5 text-lg rounded-2xl',
 };
 
-export default function Button({ variant = 'gold', size = 'md', className, children, ...props }: ButtonProps) {
+export default function Button({ variant = 'gold', size = 'md', className, children, onClick, ...props }: ButtonProps) {
   return (
     <motion.button
       className={clsx(variants[variant], sizes[size], 'select-none', className)}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.96 }}
+      onClick={(event) => {
+        soundEngine.buttonClick();
+        onClick?.(event);
+      }}
       {...(props as any)}
     >
       {children}

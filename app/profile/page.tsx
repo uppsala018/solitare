@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTournament, type TournamentHistoryRow } from '@/hooks/useTournament';
 import { supabase } from '@/lib/supabase';
+import RequireAuth from '@/components/auth/RequireAuth';
 
 const db = supabase as unknown as Record<string, any>;
 
@@ -77,6 +78,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <RequireAuth>
     <div className="min-h-screen gradient-purple flex flex-col safe-top safe-bottom">
       {/* Header */}
       <div
@@ -222,5 +224,6 @@ export default function ProfilePage() {
         </section>
       </div>
     </div>
+    </RequireAuth>
   );
 }

@@ -4,6 +4,7 @@ import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Lock, CheckCircle2, Zap, Play, Target, Trophy, Gauge, Layers, GamepadIcon } from 'lucide-react';
 import type { DailyMission } from '@/types/database';
+import { soundEngine } from '@/lib/sounds';
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
   play_games: GamepadIcon,
@@ -38,6 +39,7 @@ function MissionCard({ mission, index, isLocked, isRoyals, isClaimed, onClaim, o
     if (claimed || !mission.completed) return;
     setShowBurst(true);
     setClaimedNow(true);
+    soundEngine.tokenEarn();
     await onClaim?.(mission.id);
     setTimeout(() => setShowBurst(false), 1000);
   }
@@ -136,7 +138,10 @@ function MissionCard({ mission, index, isLocked, isRoyals, isClaimed, onClaim, o
                 className="min-h-11 px-3 rounded-xl text-xs font-bold flex items-center gap-1"
                 style={{ background: 'linear-gradient(135deg,#39ff14,#22c55e)', color: '#1a0533' }}
                 whileTap={{ scale: 0.93 }}
-                onClick={onPlay}
+                onClick={() => {
+                  soundEngine.buttonClick();
+                  onPlay?.();
+                }}
               >
                 <Play size={10} />
                 Play

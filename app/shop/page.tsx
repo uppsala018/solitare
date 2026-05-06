@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useShop } from '@/hooks/useShop';
 import { CASH_PACKAGES, GEM_PACKAGES, ROYALS_PERKS, ROYALS_PLANS } from '@/lib/shopConfig';
+import RequireAuth from '@/components/auth/RequireAuth';
 
 export default function ShopPage() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function ShopPage() {
   }
 
   return (
+    <RequireAuth>
     <div className="min-h-screen gradient-purple flex flex-col safe-top safe-bottom">
       <div
         className="relative flex flex-col gap-3 px-4 py-4"
@@ -204,6 +206,7 @@ export default function ShopPage() {
         </AnimatePresence>
       </div>
     </div>
+    </RequireAuth>
   );
 }
 

@@ -86,12 +86,21 @@ export function useGame(tournamentId?: string) {
   const draw = useCallback(() => baseDispatch({ type: 'DRAW' }), []);
 
   const moveTo = useCallback(
-    (source: GL.MoveSource, dest: 'foundation' | 'tableau', toPile?: number) => {
+    (source: GL.MoveSource, dest: 'foundation' | 'tableau', toPile?: number): boolean => {
+      const before = gameRef.current;
       if (dest === 'foundation') {
         baseDispatch({ type: 'MOVE_FOUNDATION', source });
       } else if (typeof toPile === 'number') {
         baseDispatch({ type: 'MOVE_TABLEAU', source, toPile });
+      } else {
+        return false;
       }
+      const best = dest === 'foundation'
+        ? GL.moveToFoundation(before, source)
+        : typeof toPile === 'number'
+          ? GL.moveToTableau(before, source, toPile)
+          : null;
+      return !!best;
     },
     []
   );

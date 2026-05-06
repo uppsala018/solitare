@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gem } from 'lucide-react';
 import { PACK_DEFS, RARITY_COLORS, RARITY_GLOW, COLLECTION_SETS, type PackType, type EarnedCard } from '@/types/collection';
+import { soundEngine } from '@/lib/sounds';
 
 type Stage = 'select' | 'opening' | 'reveal' | 'done';
 
@@ -31,6 +32,7 @@ export default function PackOpenModal({ open, userGems, onClose, onOpenPack }: P
 
   async function handleOpen(packType: PackType) {
     if (busy) return;
+    soundEngine.packOpen();
     setBusy(true);
     setChosenPack(packType);
     setStage('opening');

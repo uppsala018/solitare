@@ -6,6 +6,7 @@ import { Info, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuth } from '@/hooks/useAuth';
+import RequireAuth from '@/components/auth/RequireAuth';
 import SetCard from '@/components/collection/SetCard';
 import SetDetailModal from '@/components/collection/SetDetailModal';
 import PackOpenModal from '@/components/collection/PackOpenModal';
@@ -39,6 +40,7 @@ export default function CollectionPage() {
   }
 
   return (
+    <RequireAuth>
     <div className="min-h-screen flex flex-col" style={{ background: '#0d0820' }}>
       {/* ── Cinematic header ── */}
       <div
@@ -261,6 +263,7 @@ export default function CollectionPage() {
         )}
       </AnimatePresence>
     </div>
+    </RequireAuth>
   );
 }
 

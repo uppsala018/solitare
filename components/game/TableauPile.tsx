@@ -16,10 +16,11 @@ interface TableauPileProps {
   onDrop: (item: DragItem, toPileIndex: number) => void;
   onCardClick: (pileIndex: number, cardIndex: number) => void;
   onCardDblClick: (pileIndex: number, cardIndex: number) => void;
+  invalidCard?: { pileIndex: number; cardIndex: number; pulse: number } | null;
 }
 
 export default function TableauPile({
-  pile, pileIndex, onDrop, onCardClick, onCardDblClick,
+  pile, pileIndex, onDrop, onCardClick, onCardDblClick, invalidCard,
 }: TableauPileProps) {
   const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
     accept: DRAG_TYPE,
@@ -74,6 +75,7 @@ export default function TableauPile({
               stackCards={card.faceUp ? stackCards : []}
               onClick={() => onCardClick(pileIndex, i)}
               onDoubleClick={() => onCardDblClick(pileIndex, i)}
+              invalidPulse={invalidCard?.pileIndex === pileIndex && invalidCard.cardIndex === i ? invalidCard.pulse : 0}
             />
           </div>
         );

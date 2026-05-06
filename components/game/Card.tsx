@@ -14,10 +14,11 @@ interface CardProps {
   onClick?: () => void;
   onDoubleClick?: () => void;
   isDimmed?: boolean;
+  invalidPulse?: number;
 }
 
 function Card({
-  card, source, stackCards = [], onClick, onDoubleClick, isDimmed,
+  card, source, stackCards = [], onClick, onDoubleClick, isDimmed, invalidPulse = 0,
 }: CardProps) {
   const [{ isDragging }, drag] = useDrag<DragItem, void, { isDragging: boolean }>({
     type: DRAG_TYPE,
@@ -39,12 +40,12 @@ function Card({
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={card.faceUp ? 'face-up' : 'face-down'}
+          key={`${card.faceUp ? 'face-up' : 'face-down'}-${invalidPulse}`}
           className="absolute inset-0"
           initial={{ rotateY: -90, opacity: 0 }}
-          animate={{ rotateY: 0, opacity: 1 }}
+          animate={invalidPulse ? { rotateY: 0, opacity: 1, x: [0, -8, 8, -6, 6, 0] } : { rotateY: 0, opacity: 1, x: 0 }}
           exit={{ rotateY: 90, opacity: 0 }}
-          transition={{ duration: 0.14 }}
+          transition={invalidPulse ? { duration: 0.45 } : { duration: 0.14 }}
         >
           {card.faceUp ? <FaceUp card={card} /> : <FaceDown />}
         </motion.div>

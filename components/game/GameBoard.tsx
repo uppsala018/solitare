@@ -43,6 +43,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const [showTournamentResults, setShowTournamentResults] = useState(false);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [invalidCard, setInvalidCard] = useState<{ pileIndex: number; cardIndex: number; pulse: number } | null>(null);
   const { hapticsEnabled, autoCompleteEnabled } = useGameStore();
   const { user } = useAuth();
   const { leaderboard, subscribeToLeaderboard, enterTournament } = useTournament();
@@ -124,10 +125,15 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const handleDrop = useCallback(
     (item: DragItem, dest: 'foundation' | 'tableau', toPile?: number) => {
       ensureStarted();
-      moveTo(item.source, dest, toPile);
-      if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
-      playPlace();
-      if (dest === 'foundation') playFoundation();
+      const moved = moveTo(item.source, dest, toPile);
+      if (moved) {
+        if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
+        if (dest === 'foundation') playFoundation();
+        else playPlace();
+      } else {
+        if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(100);
+        playInvalid();
+      }
     },
     [moveTo, playPlace, playFoundation], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -141,6 +147,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
         if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
         playPlace();
       } else {
+        setInvalidCard({ pileIndex, cardIndex, pulse: Date.now() });
         if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(100);
         playInvalid();
       }
@@ -151,8 +158,13 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const handleCardDblClick = useCallback(
     (pileIndex: number, cardIndex: number) => {
       ensureStarted();
-      moveTo({ type: 'tableau', pileIndex, cardIndex }, 'foundation');
-      playFoundation();
+      const moved = moveTo({ type: 'tableau', pileIndex, cardIndex }, 'foundation');
+      if (moved) playFoundation();
+      else {
+        setInvalidCard({ pileIndex, cardIndex, pulse: Date.now() });
+        if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(100);
+        playInvalid();
+      }
     },
     [moveTo, playFoundation], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -256,6 +268,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
             onDrop={(item, toPile) => handleDrop(item, 'tableau', toPile)}
             onCardClick={handleCardClick}
             onCardDblClick={handleCardDblClick}
+            invalidCard={invalidCard}
           />
         ))}
       </div>
