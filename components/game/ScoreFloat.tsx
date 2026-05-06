@@ -2,55 +2,33 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { ScoreEvent } from '@/hooks/useGame';
 
 const MOTIVATIONAL = [
-  { threshold: 1000, text: '⭐ Keep it UP!' },
-  { threshold: 2000, text: '🔥 Amazing!' },
-  { threshold: 3000, text: '👑 Unstoppable!' },
+  { threshold: 1000, text: '★ Keep it up!' },
+  { threshold: 2000, text: 'Amazing!' },
+  { threshold: 3000, text: 'Unstoppable!' },
 ];
 
 interface ScoreFloatProps {
-  events: ScoreEvent[];
   totalScore: number;
 }
 
-export default function ScoreFloat({ events, totalScore }: ScoreFloatProps) {
+export default function ScoreFloat({ totalScore }: ScoreFloatProps) {
   const shown = useRef(new Set<number>());
   const [banner, setBanner] = useState<string | null>(null);
 
   useEffect(() => {
-    const hit = MOTIVATIONAL.find(
-      (m) => totalScore >= m.threshold && !shown.current.has(m.threshold)
-    );
+    const hit = MOTIVATIONAL.find((m) => totalScore >= m.threshold && !shown.current.has(m.threshold));
     if (hit) {
       shown.current.add(hit.threshold);
       setBanner(hit.text);
-      const t = setTimeout(() => setBanner(null), 2000);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => setBanner(null), 2000);
+      return () => clearTimeout(timer);
     }
   }, [totalScore]);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-30">
-      {/* Floating +points */}
-      <AnimatePresence>
-        {events.map((ev) => (
-          <motion.div
-            key={ev.id}
-            className="absolute left-1/2 font-bold text-gold glow-gold"
-            style={{ top: '35%', x: '-50%', fontFamily: "'Fredoka One', cursive", fontSize: 22 }}
-            initial={{ opacity: 1, y: 0 }}
-            animate={{ opacity: 0, y: -55 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-          >
-            +{ev.amount}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-
-      {/* Motivational banner */}
       <AnimatePresence>
         {banner && (
           <motion.div
@@ -64,12 +42,9 @@ export default function ScoreFloat({ events, totalScore }: ScoreFloatProps) {
           >
             <div
               className="px-6 py-3 rounded-2xl text-center"
-              style={{
-                background: 'rgba(26,5,51,0.95)',
-                border: '2px solid rgba(245,200,66,0.55)',
-              }}
+              style={{ background: 'rgba(26,5,51,0.95)', border: '2px solid rgba(245,200,66,0.55)' }}
             >
-              <p className="text-2xl text-gold glow-gold" style={{ fontFamily: "'Fredoka One', cursive" }}>
+              <p className="text-2xl text-gold" style={{ fontFamily: "'Fredoka One', cursive", textShadow: '0 2px 8px rgba(0,0,0,0.45)' }}>
                 {banner}
               </p>
               <div className="flex justify-center gap-0.5 mt-1">
@@ -81,7 +56,7 @@ export default function ScoreFloat({ events, totalScore }: ScoreFloatProps) {
                     animate={{ y: -18, opacity: 0 }}
                     transition={{ duration: 0.7, delay: i * 0.1, repeat: 1 }}
                   >
-                    ⭐
+                    ★
                   </motion.span>
                 ))}
               </div>

@@ -7,12 +7,18 @@ interface GameStore {
   gameState: GameState | null;
   soundEnabled: boolean;
   musicEnabled: boolean;
+  hapticsEnabled: boolean;
+  autoCompleteEnabled: boolean;
+  theme: 'classic' | 'midnight' | 'ocean' | 'forest';
   highScore: number;
   coins: number;
   setGameState: (state: GameState) => void;
   newGame: () => void;
   toggleSound: () => void;
   toggleMusic: () => void;
+  toggleHaptics: () => void;
+  toggleAutoComplete: () => void;
+  setTheme: (theme: GameStore['theme']) => void;
   addCoins: (amount: number) => void;
 }
 
@@ -22,6 +28,9 @@ export const useGameStore = create<GameStore>()(
       gameState: null,
       soundEnabled: true,
       musicEnabled: true,
+      hapticsEnabled: true,
+      autoCompleteEnabled: true,
+      theme: 'classic',
       highScore: 0,
       coins: 1000,
 
@@ -35,6 +44,9 @@ export const useGameStore = create<GameStore>()(
 
       toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
       toggleMusic: () => set((s) => ({ musicEnabled: !s.musicEnabled })),
+      toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
+      toggleAutoComplete: () => set((s) => ({ autoCompleteEnabled: !s.autoCompleteEnabled })),
+      setTheme: (theme) => set({ theme }),
 
       addCoins: (amount) => set((s) => ({ coins: s.coins + amount })),
     }),

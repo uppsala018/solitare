@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
+import AppEffects from '@/components/ui/AppEffects';
 
 export const metadata: Metadata = {
   title: 'Solitaire Crown',
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="safe-top safe-bottom">
         <ToastProvider>
+          <AppEffects />
           {children}
         </ToastProvider>
       </body>

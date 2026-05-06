@@ -18,6 +18,7 @@ const MUTE_KEY = 'solitaire-crown-muted';
 
 export class SoundEngine {
   private ctx: AudioContext | null = null;
+  private ambientNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
 
   get muted() {
     if (typeof window === 'undefined') return true;
@@ -31,6 +32,36 @@ export class SoundEngine {
 
   toggleMute() {
     this.setMuted(!this.muted);
+  }
+
+  startAmbient() {
+    const ctx = this.getCtx();
+    if (!ctx || this.ambientNodes.length > 0) return;
+
+    [110, 146.83, 196].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.012;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + index * 0.05);
+      this.ambientNodes.push({ osc, gain });
+    });
+  }
+
+  stopAmbient() {
+    const ctx = this.ctx;
+    this.ambientNodes.forEach(({ osc, gain }) => {
+      try {
+        if (ctx) gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+        osc.stop((ctx?.currentTime ?? 0) + 0.25);
+      } catch {
+        // Ignore already-stopped nodes.
+      }
+    });
+    this.ambientNodes = [];
   }
 
   private getCtx() {

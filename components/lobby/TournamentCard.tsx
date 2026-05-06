@@ -17,6 +17,9 @@ function TournamentCard({ title, prize, timeLeft, players, onJoin }: TournamentC
       className="rounded-2xl p-4 flex flex-col gap-3"
       style={{ background: 'linear-gradient(135deg, #2d1b69 0%, #4c2d8f 100%)', border: '1px solid rgba(245,200,66,0.3)' }}
       whileTap={{ scale: 0.97 }}
+      whileHover={{ y: -3 }}
+      animate={{ y: [0, -4, 0] }}
+      transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
     >
       <div className="flex justify-between items-start">
         <h3 className="text-white font-semibold text-base">{title}</h3>

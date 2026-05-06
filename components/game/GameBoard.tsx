@@ -16,8 +16,12 @@ import TableauPile from './TableauPile';
 import FoundationPile from './FoundationPile';
 import StockPile from './StockPile';
 import ScoreFloat from './ScoreFloat';
+import ScorePopup from './ScorePopup';
 import EndGameModal from './EndGameModal';
 import RulesModal from './RulesModal';
+import SettingsModal from '@/components/ui/SettingsModal';
+import Particles from '@/components/ui/Particles';
+import { useGameStore } from '@/store/gameStore';
 
 interface GameBoardProps {
   tournamentId?: string;
@@ -31,8 +35,11 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
 
   const [showEnd,        setShowEnd]        = useState(false);
   const [showRules,      setShowRules]      = useState(false);
+  const [showSettings,   setShowSettings]   = useState(false);
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { hapticsEnabled, autoCompleteEnabled } = useGameStore();
 
   const { playFlip, playPlace, playFoundation, playWin, playInvalid, playTick } = useSound();
 
@@ -73,7 +80,9 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     if (game.isWon && !wonRef.current) {
       wonRef.current = true;
       playWin();
-      if (typeof navigator !== 'undefined') navigator.vibrate?.([50, 30, 50]);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 1800);
+      if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.([50, 30, 50]);
       timer.pause();
       saveSession(timer.timeLeft);
       const t = setTimeout(() => setShowEnd(true), 700);
@@ -93,7 +102,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
   const handleDraw = () => {
     ensureStarted();
     draw();
-    if (typeof navigator !== 'undefined') navigator.vibrate?.(10);
+    if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(10);
     playFlip();
   };
 
@@ -101,7 +110,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     (item: DragItem, dest: 'foundation' | 'tableau', toPile?: number) => {
       ensureStarted();
       moveTo(item.source, dest, toPile);
-      if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
+      if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
       playPlace();
       if (dest === 'foundation') playFoundation();
     },
@@ -114,10 +123,10 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       const source: MoveSource = { type: 'tableau', pileIndex, cardIndex };
       const moved = autoMove(source);
       if (moved) {
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
+        if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
         playPlace();
       } else {
-        if (typeof navigator !== 'undefined') navigator.vibrate?.(100);
+        if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(100);
         playInvalid();
       }
     },
@@ -138,10 +147,10 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
     ensureStarted();
     const moved = autoMove({ type: 'waste' });
     if (moved) {
-      if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
+      if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(30);
       playPlace();
     } else {
-      if (typeof navigator !== 'undefined') navigator.vibrate?.(100);
+      if (hapticsEnabled && typeof navigator !== 'undefined') navigator.vibrate?.(100);
       playInvalid();
     }
   }, [game.waste, autoMove, playPlace, playInvalid]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -178,7 +187,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
         timeFormatted={timer.formatted}
         score={game.score}
         timeLeft={timer.timeLeft}
-        onSettings={() => setShowRules(true)}
+        onSettings={() => setShowSettings(true)}
         tournamentName={tournament ? `${tournament.theme} - ${tournament.name}` : undefined}
         tournamentPrizePool={tournament ? Number(tournament.prize_pool) : undefined}
       />
@@ -235,7 +244,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       </div>
 
       {/* Auto-complete button */}
-      {isAutoCompletable && !showEnd && (
+      {autoCompleteEnabled && isAutoCompletable && !showEnd && (
         <div className="flex justify-center pb-2">
           <motion.button
             className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-purple-deep gradient-gold text-sm"
@@ -261,7 +270,9 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       </div>
 
       {/* Overlays */}
-      <ScoreFloat events={scoreEvents} totalScore={game.score} />
+      <ScorePopup events={scoreEvents} />
+      <ScoreFloat totalScore={game.score} />
+      <Particles active={showConfetti} kind="confetti" />
 
       <EndGameModal
         open={showEnd}
@@ -275,6 +286,7 @@ export default function GameBoard({ tournamentId }: GameBoardProps) {
       />
 
       <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+      <SettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
 
       {/* Confirm end */}
       {showConfirmEnd && (
